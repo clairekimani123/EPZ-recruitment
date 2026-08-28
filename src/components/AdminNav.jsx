@@ -10,7 +10,8 @@ export default function AdminNav() {
   }
 
   return (
-    <nav style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 24 }}>
+    <nav className="admin-nav">
+      <span className="admin-nav-wordmark">Peak Campus</span>
       <Link to="/admin">Applicants</Link>
       <Link to="/admin/batches">Batches</Link>
       <Link to="/admin/companies">Companies</Link>

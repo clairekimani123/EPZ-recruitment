@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../lib/api.js';
 import AdminNav from '../components/AdminNav.jsx';
+import Modal from '../components/Modal.jsx';
+
+const initialForm = { name: '', contactPerson: '', contactPhone: '' };
 
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ name: '', contactPerson: '', contactPhone: '' });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form, setForm] = useState(initialForm);
   const [error, setError] = useState(null);
 
   async function loadCompanies() {
@@ -19,6 +23,12 @@ export default function CompaniesPage() {
   useEffect(() => {
     loadCompanies();
   }, []);
+
+  function openModal() {
+    setForm(initialForm);
+    setError(null);
+    setIsModalOpen(true);
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -40,32 +50,21 @@ export default function CompaniesPage() {
       return;
     }
 
-    setForm({ name: '', contactPerson: '', contactPhone: '' });
+    setIsModalOpen(false);
     loadCompanies(); // refresh the list to include the new one
   }
 
   return (
     <main className="admin-wrap">
       <AdminNav />
-      <h1>Companies</h1>
 
-      <form onSubmit={handleSubmit} className="card" style={{ maxWidth: 480, marginBottom: 24 }}>
-        <h3 style={{ marginTop: 0 }}>Add a company</h3>
-        {error && <div className="banner-error">{error}</div>}
-        <div className="field">
-          <label>Company name</label>
-          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div>
+          <h1 style={{ marginBottom: 0 }}>Companies</h1>
+          <p style={{ color: 'var(--color-text-muted)', marginTop: 4 }}>{companies.length} total</p>
         </div>
-        <div className="field">
-          <label>Contact person (optional)</label>
-          <input value={form.contactPerson} onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} />
-        </div>
-        <div className="field">
-          <label>Contact phone (optional)</label>
-          <input value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} />
-        </div>
-        <button type="submit" className="button">Add company</button>
-      </form>
+        <button className="button" onClick={openModal}>+ Add company</button>
+      </div>
 
       {loading ? (
         <p>Loading…</p>
@@ -88,6 +87,25 @@ export default function CompaniesPage() {
           </tbody>
         </table>
       )}
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add a company">
+        <form onSubmit={handleSubmit}>
+          {error && <div className="banner-error">{error}</div>}
+          <div className="field">
+            <label>Company name</label>
+            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </div>
+          <div className="field">
+            <label>Contact person (optional)</label>
+            <input value={form.contactPerson} onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} />
+          </div>
+          <div className="field">
+            <label>Contact phone (optional)</label>
+            <input value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} />
+          </div>
+          <button type="submit" className="button" style={{ width: '100%' }}>Add company</button>
+        </form>
+      </Modal>
     </main>
   );
 }

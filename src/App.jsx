@@ -3,6 +3,8 @@ import HomePage from './pages/HomePage.jsx';
 import ApplyPage from './pages/ApplyPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import CompaniesPage from './pages/CompaniesPage.jsx';
+import BatchesPage from './pages/BatchesPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 
 export default function App() {
@@ -11,14 +13,9 @@ export default function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/apply" element={<ApplyPage />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute>
-            <AdminPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+      <Route path="/admin/companies" element={<ProtectedRoute><CompaniesPage /></ProtectedRoute>} />
+      <Route path="/admin/batches" element={<ProtectedRoute><BatchesPage /></ProtectedRoute>} />
     </Routes>
   );
 }

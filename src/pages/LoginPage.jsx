@@ -5,7 +5,7 @@ import { saveToken } from '../lib/auth.js';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,7 +20,7 @@ export default function LoginPage() {
       const res = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
 
@@ -45,8 +45,8 @@ export default function LoginPage() {
         {error && <div className="banner-error">{error}</div>}
 
         <div className="field">
-          <label htmlFor="username">Username</label>
-          <input id="username" value={username} onChange={(e) => setUsername(e.target.value)} />
+          <label htmlFor="email">Email</label>
+          <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
 
         <div className="field">

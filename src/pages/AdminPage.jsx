@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getToken, clearToken } from '../lib/auth.js';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+import { useEffect, useState, Fragment } from 'react';
+import { Search, RotateCcw } from 'lucide-react';
+import { apiFetch, API_URL } from '../lib/api.js';
+import { getToken } from '../lib/auth.js';
+import AdminNav from '../components/AdminNav.jsx';
 
 const STATUS_LABELS = {
   applied: 'Applied',
@@ -12,82 +12,377 @@ const STATUS_LABELS = {
   employed: 'Employed',
   rejected: 'Rejected',
 };
+const STATUS_OPTIONS = Object.keys(STATUS_LABELS);
+
+const PAYMENT_LABELS = { pending: 'Pending', completed: 'Completed', failed: 'Failed' };
+const PAYMENT_OPTIONS = Object.keys(PAYMENT_LABELS);
+
+// Same list as server/constants/jobTypes.js - kept here too since the
+// frontend and backend run as separate apps with no shared import between
+// them. If you add a job type on one side, add it here too.
+const JOB_TYPES = ['Single needle', 'Flatlock', 'Overlock', 'Top stitch', 'Machine operator'];
+
+const PAGE_SIZE_OPTIONS = [20, 40, 60, 100];
+
+// Colors for the status/payment pill selects. Returned as inline style
+// objects since a native <select>'s background can't be targeted by CSS
+// based on its own selected value - only JS knows what's currently chosen.
+function getStatusStyle(status) {
+  const map = {
+    applied: { background: '#e2e8f0', color: '#334155' },
+    shortlisted: { background: '#dbeafe', color: '#1e40af' },
+    contract_signed: { background: '#ede9fe', color: '#5b21b6' },
+    in_training: { background: '#fef3c7', color: '#92400e' },
+    employed: { background: '#dcfce7', color: '#166534' },
+    rejected: { background: '#fee2e2', color: '#991b1b' },
+  };
+  return map[status] || map.applied;
+}
+
+function getPaymentStyle(paymentStatus) {
+  const map = {
+    pending: { background: '#fef3c7', color: '#92400e' },
+    completed: { background: '#dcfce7', color: '#166534' },
+    failed: { background: '#fee2e2', color: '#991b1b' },
+  };
+  return map[paymentStatus] || map.pending;
+}
+
+const initialFilters = { dateFrom: '', dateTo: '', location: '', phone: '', jobType: '' };
 
 export default function AdminPage() {
   const [applicants, setApplicants] = useState([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
+  const [updatingId, setUpdatingId] = useState(null);
+  const [requestingPaymentId, setRequestingPaymentId] = useState(null);
 
-  useEffect(() => {
-    fetch(`${API_URL}/api/applicants`, {
-      headers: { Authorization: `Bearer ${getToken()}` },
-    })
-      .then((res) => {
-        if (res.status === 401) {
-          clearToken();
-          navigate('/login');
-          throw new Error('Session expired.');
-        }
-        if (!res.ok) throw new Error('Failed to fetch applicants');
-        return res.json();
-      })
-      .then((data) => setApplicants(data.applicants))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [navigate]);
+  const [filters, setFilters] = useState(initialFilters);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
-  function handleLogout() {
-    clearToken();
-    navigate('/login');
+  // Documents shown per-row, loaded lazily the first time a row is expanded
+  // (no reason to fetch every applicant's documents up front if the admin
+  // never opens most of them).
+  const [expandedId, setExpandedId] = useState(null);
+  const [documentsByApplicant, setDocumentsByApplicant] = useState({});
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+
+  async function loadApplicants() {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ page, pageSize });
+      if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params.set('dateTo', filters.dateTo);
+      if (filters.location) params.set('location', filters.location);
+      if (filters.phone) params.set('phone', filters.phone);
+      if (filters.jobType) params.set('jobType', filters.jobType);
+
+      const res = await apiFetch(`/api/applicants?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch applicants');
+      const data = await res.json();
+      setApplicants(data.applicants);
+      setTotal(data.total);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  if (loading) return <main className="admin-wrap">Loading…</main>;
-  if (error) return <main className="admin-wrap"><div className="banner-error">{error}</div></main>;
+  // Re-fetch whenever page or pageSize changes. Filters are applied
+  // separately via the "Search" button (see handleSearch) rather than on
+  // every keystroke, so we're not hammering the server while someone is
+  // still typing a location name.
+  useEffect(() => {
+    loadApplicants();
+  }, [page, pageSize]);
+
+  function handleFilterChange(e) {
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function handleSearch(e) {
+    e.preventDefault();
+    setPage(1); // any new search starts back at page 1
+    loadApplicants();
+  }
+
+  function handleClearFilters() {
+    setFilters(initialFilters);
+    setPage(1);
+    // loadApplicants runs after state updates via the page-change effect
+    // only when page actually changes; since page may already be 1, call
+    // it directly too so clearing always refreshes results.
+    setTimeout(loadApplicants, 0);
+  }
+
+  async function handleStatusChange(applicantId, newStatus) {
+    setUpdatingId(applicantId);
+    try {
+      const res = await apiFetch(`/api/applicants/${applicantId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error();
+      setApplicants((prev) => prev.map((a) => (a.id === applicantId ? { ...a, status: newStatus } : a)));
+    } catch {
+      alert('Could not update status. Please try again.');
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  async function handlePaymentStatusChange(applicantId, newPaymentStatus) {
+    setUpdatingId(applicantId);
+    try {
+      const res = await apiFetch(`/api/applicants/${applicantId}/payment-status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ paymentStatus: newPaymentStatus }),
+      });
+      if (!res.ok) throw new Error();
+      // Re-fetch this row's data rather than guessing payment_date locally -
+      // the server is the source of truth for what date got stamped.
+      loadApplicants();
+    } catch {
+      alert('Could not update payment status. Please try again.');
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  // Sends an actual M-Pesa STK push (PIN prompt) to the applicant's phone.
+  // This does NOT immediately mark them as paid - the payment_status only
+  // changes once Safaricom calls our /mpesa/callback route with the real
+  // result, which can take anywhere from a few seconds to a couple minutes
+  // depending on how quickly the applicant responds to the prompt.
+  async function handleRequestPayment(applicantId) {
+    setRequestingPaymentId(applicantId);
+    try {
+      const res = await apiFetch(`/api/applicants/${applicantId}/request-payment`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to send payment request.');
+        return;
+      }
+      alert('Payment request sent - the applicant should see a PIN prompt on their phone shortly.');
+    } catch {
+      alert('Could not reach the server.');
+    } finally {
+      setRequestingPaymentId(null);
+    }
+  }
+
+  async function toggleDocuments(applicantId) {
+    if (expandedId === applicantId) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(applicantId);
+
+    if (!documentsByApplicant[applicantId]) {
+      setDocumentsLoading(true);
+      const res = await apiFetch(`/api/applicants/${applicantId}/documents`);
+      const data = await res.json();
+      setDocumentsByApplicant((prev) => ({ ...prev, [applicantId]: data.documents }));
+      setDocumentsLoading(false);
+    }
+  }
+
+  // Downloading an authenticated file can't just be a plain <a href> link -
+  // a normal browser navigation doesn't send our Authorization header, so
+  // the server would reject it with a 401. Instead we fetch it ourselves
+  // (attaching the token via apiFetch), turn the response into a Blob, and
+  // trigger the browser's save dialog manually via a temporary link.
+  async function downloadDocument(applicantId, documentId, filename) {
+    const res = await apiFetch(`/api/applicants/${applicantId}/documents/${documentId}/download`);
+    if (!res.ok) {
+      alert('Failed to download document.');
+      return;
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url); // free the memory once the download starts
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  if (loading && applicants.length === 0) return <main className="admin-wrap"><AdminNav />Loading…</main>;
+  if (error) return <main className="admin-wrap"><AdminNav /><div className="banner-error">{error}</div></main>;
 
   return (
     <main className="admin-wrap">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 style={{ marginBottom: 0 }}>Applicants</h1>
-          <p style={{ color: '#666', marginTop: 4 }}>{applicants.length} total</p>
+      <AdminNav />
+      <h1 style={{ marginBottom: 0 }}>Applicants</h1>
+      <p style={{ color: 'var(--color-text-muted)', marginTop: 4 }}>{total} total</p>
+
+      <form onSubmit={handleSearch} className="filter-bar">
+        <div className="filter-field">
+          <label>Registered from</label>
+          <input type="date" name="dateFrom" value={filters.dateFrom} onChange={handleFilterChange} />
         </div>
-        <button className="button" onClick={handleLogout}>Log out</button>
+        <div className="filter-field">
+          <label>Registered to</label>
+          <input type="date" name="dateTo" value={filters.dateTo} onChange={handleFilterChange} />
+        </div>
+        <div className="filter-field">
+          <label>Location</label>
+          <input name="location" value={filters.location} onChange={handleFilterChange} placeholder="e.g. Kisumu" />
+        </div>
+        <div className="filter-field">
+          <label>Phone number</label>
+          <input name="phone" value={filters.phone} onChange={handleFilterChange} placeholder="07..." />
+        </div>
+        <div className="filter-field">
+          <label>Job type</label>
+          <select name="jobType" value={filters.jobType} onChange={handleFilterChange}>
+            <option value="">All</option>
+            {JOB_TYPES.map((jt) => (
+              <option key={jt} value={jt}>{jt}</option>
+            ))}
+          </select>
+        </div>
+        <button type="submit" className="icon-btn icon-btn-search" title="Search">
+          <Search size={16} />
+        </button>
+        <button type="button" className="icon-btn icon-btn-reset" title="Clear filters" onClick={handleClearFilters}>
+          <RotateCcw size={16} />
+        </button>
+      </form>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ fontSize: 14 }}>
+          <label style={{ marginRight: 8 }}>Show</label>
+          <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}>
+            {PAGE_SIZE_OPTIONS.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+          <span style={{ marginLeft: 6 }}>entries</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button className="button button-secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
+          <span style={{ fontSize: 14 }}>Page {page} of {totalPages}</span>
+          <button className="button button-secondary" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next</button>
+        </div>
       </div>
 
-      <table>
+      <div className="table-scroll">
+        <table>
         <thead>
           <tr>
             <th>Ref #</th>
             <th>Name</th>
             <th>Phone</th>
             <th>Age</th>
-            <th>Experience</th>
+            <th>Location</th>
+            <th>Company / Role</th>
             <th>Status</th>
+            <th>Payment</th>
             <th>Applied</th>
+            <th>Docs</th>
           </tr>
         </thead>
         <tbody>
           {applicants.map((a) => (
-            <tr key={a.id}>
-              <td style={{ fontFamily: 'monospace' }}>#{a.id}</td>
-              <td>{a.full_name}</td>
-              <td>{a.phone_number}</td>
-              <td>{a.age}</td>
-              <td>{a.has_experience ? 'Yes' : 'No'}</td>
-              <td><span className="badge">{STATUS_LABELS[a.status] ?? a.status}</span></td>
-              <td style={{ color: '#888' }}>{new Date(a.created_at).toLocaleDateString()}</td>
-            </tr>
+            <Fragment key={a.id}>
+              <tr>
+                <td style={{ fontFamily: 'monospace' }}>#{a.id}</td>
+                <td>{a.full_name}</td>
+                <td>{a.phone_number}</td>
+                <td>{a.age}</td>
+                <td>{a.location || '—'}</td>
+                <td>{a.company_name ? `${a.company_name} — ${a.batch_role}` : '—'}</td>
+                <td>
+                  <select
+                    className="pill-select"
+                    style={getStatusStyle(a.status)}
+                    value={a.status}
+                    disabled={updatingId === a.id}
+                    onChange={(e) => handleStatusChange(a.id, e.target.value)}
+                  >
+                    {STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                    ))}
+                  </select>
+                </td>
+                <td>
+                  <select
+                    className="pill-select"
+                    style={getPaymentStyle(a.payment_status)}
+                    value={a.payment_status}
+                    disabled={updatingId === a.id}
+                    onChange={(e) => handlePaymentStatusChange(a.id, e.target.value)}
+                  >
+                    {PAYMENT_OPTIONS.map((p) => (
+                      <option key={p} value={p}>{PAYMENT_LABELS[p]}</option>
+                    ))}
+                  </select>
+                  {a.payment_date && (
+                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                      {new Date(a.payment_date).toLocaleDateString()}
+                    </div>
+                  )}
+                  {a.payment_status !== 'completed' && (
+                    <button
+                      className="button button-secondary"
+                      style={{ padding: '3px 8px', fontSize: 11, marginTop: 4, display: 'block' }}
+                      disabled={requestingPaymentId === a.id}
+                      onClick={() => handleRequestPayment(a.id)}
+                    >
+                      {requestingPaymentId === a.id ? 'Sending…' : 'Request payment'}
+                    </button>
+                  )}
+                </td>
+                <td style={{ color: 'var(--color-text-muted)' }}>{new Date(a.created_at).toLocaleDateString()}</td>
+                <td>
+                  <button className="button button-secondary" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => toggleDocuments(a.id)}>
+                    {expandedId === a.id ? 'Hide' : 'View'}
+                  </button>
+                </td>
+              </tr>
+              {expandedId === a.id && (
+                <tr>
+                  <td colSpan={10} style={{ background: '#f8faff', padding: 16 }}>
+                    {documentsLoading ? (
+                      <p style={{ margin: 0, fontSize: 13 }}>Loading documents…</p>
+                    ) : (documentsByApplicant[a.id] || []).length === 0 ? (
+                      <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-muted)' }}>No documents uploaded.</p>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                        {documentsByApplicant[a.id].map((doc) => (
+                          <button
+                            key={doc.id}
+                            className="button button-secondary"
+                            style={{ fontSize: 12 }}
+                            onClick={() => downloadDocument(a.id, doc.id, doc.original_filename)}
+                          >
+                            {doc.doc_type.replace(/_/g, ' ')} — download
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              )}
+            </Fragment>
           ))}
           {applicants.length === 0 && (
             <tr>
-              <td colSpan={7} style={{ textAlign: 'center', color: '#aaa', padding: 24 }}>
-                No applications yet.
+              <td colSpan={10} style={{ textAlign: 'center', color: '#aaa', padding: 24 }}>
+                No applicants match these filters.
               </td>
             </tr>
           )}
         </tbody>
-      </table>
+        </table>
+      </div>
     </main>
   );
 }
