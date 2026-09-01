@@ -3,12 +3,10 @@ import { clearToken } from '../lib/auth.js';
 
 export default function AdminNav() {
   const navigate = useNavigate();
-
   function handleLogout() {
     clearToken();
     navigate('/login');
   }
-
   return (
     <nav className="admin-nav">
       <span className="admin-nav-wordmark">Peak Campus</span>

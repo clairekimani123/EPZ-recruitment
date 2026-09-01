@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveToken } from '../lib/auth.js';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+import { API_URL } from '../lib/api.js';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -15,7 +14,6 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
-
     try {
       const res = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
@@ -23,12 +21,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || 'Login failed.');
-        return;
-      }
-
+      if (!res.ok) { setError(data.error || 'Login failed.'); return; }
       saveToken(data.token);
       navigate('/admin');
     } catch (err) {
@@ -40,20 +33,17 @@ export default function LoginPage() {
 
   return (
     <main className="page-center">
-      <form className="card" onSubmit={handleSubmit}>
+      <form className="card narrow" onSubmit={handleSubmit}>
         <h1 style={{ marginTop: 0 }}>Staff login</h1>
         {error && <div className="banner-error">{error}</div>}
-
         <div className="field">
           <label htmlFor="email">Email</label>
           <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
-
         <div className="field">
           <label htmlFor="password">Password</label>
           <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
-
         <button type="submit" className="button" style={{ width: '100%' }} disabled={isSubmitting}>
           {isSubmitting ? 'Logging in…' : 'Log in'}
         </button>

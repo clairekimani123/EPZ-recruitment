@@ -1,31 +1,15 @@
-/* ==========================================================================
-   Peak Campus brand tokens.
-   Chosen deliberately: deep blue for authority/trust (a training + hiring
-   brand needs to read as credible), a soft blue-tinted page background
-   instead of stark white/gray so the white card reads as "the form,"
-   Poppins for headings (confident, geometric - fits an institution),
-   Inter for body/inputs (quiet, highly legible - forms are read under
-   pressure, so body text should not compete with the brand type).
-   ========================================================================== */
-
 :root {
   --color-primary: #1d4ed8;
   --color-primary-dark: #1e3a8a;
-  --color-bg: #f5f8ff;
-  --color-surface: #ffffff;
-  --color-text: #0f172a;
+  --color-bg: #f6fafd;
+  --color-text: #1a1a1a;
   --color-text-muted: #5b6b85;
   --color-border: #d9e4f5;
-  --color-error: #dc2626;
-  --color-error-bg: #fef2f2;
-  --color-error-border: #fecaca;
-  --font-heading: 'Poppins', 'Segoe UI', sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Poppins', var(--font-body);
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
@@ -34,384 +18,94 @@ body {
   color: var(--color-text);
 }
 
-h1, h2, h3 {
-  font-family: var(--font-heading);
-  color: var(--color-primary-dark);
-}
-
-/* ---- Site header: the one consistent brand anchor across public pages --- */
-.site-header {
-  background: var(--color-primary);
-  color: white;
-  padding: 18px 32px;
-  display: flex;
-  align-items: center;
-  border-bottom: 3px solid var(--color-primary-dark);
-}
-
-.site-header .wordmark {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: 0.3px;
-}
-
-/* ---- Page shells ---------------------------------------------------- */
 .page-center {
-  min-height: calc(100vh - 64px);
+  min-height: 100vh;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 40px 24px;
-}
-
-.page-center.centered-vertically {
   align-items: center;
+  justify-content: center;
+  padding: 24px;
 }
 
-/* Wide card - this is what makes the form occupy real page width instead
-   of a narrow phone-shaped column, per the "horizontal layout" request. */
 .card {
-  background: var(--color-surface);
+  background: white;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 36px 40px;
-  max-width: 880px;
+  border-radius: 10px;
+  padding: 32px;
+  max-width: 640px;
   width: 100%;
-  box-shadow: 0 4px 16px rgba(29, 78, 216, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.card.narrow {
-  max-width: 420px;
-}
+.card.narrow { max-width: 420px; }
 
-/* ---- Form layout: paired fields side by side on wider screens -------- */
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 20px;
-}
-
-.form-grid .field-full {
-  grid-column: 1 / -1;
-}
-
-@media (max-width: 640px) {
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ---- Buttons ----------------------------------------------------------- */
 .button {
   display: inline-block;
   background: var(--color-primary);
   color: white;
   border: none;
-  padding: 12px 22px;
-  border-radius: 8px;
+  padding: 12px 20px;
+  border-radius: 6px;
   font-size: 14px;
-  font-weight: 600;
   cursor: pointer;
   text-decoration: none;
   text-align: center;
-  transition: background 0.15s ease;
 }
 
-.button:hover {
-  background: var(--color-primary-dark);
-}
-
-.button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.button:hover { background: var(--color-primary-dark); }
+.button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .button-secondary {
   background: white;
   color: var(--color-primary-dark);
   border: 1px solid var(--color-border);
 }
+.button-secondary:hover { background: #f0f4ff; }
 
-.button-secondary:hover {
-  background: #f0f4ff;
-}
-
-/* ---- Form fields --------------------------------------------------- */
-.field {
-  margin-bottom: 18px;
-}
-
-.field label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 6px;
-  color: var(--color-text);
-}
-
-.field input,
-.field select,
-.field textarea {
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.field input, .field select, .field textarea {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: var(--font-body);
-  background: white;
-  color: var(--color-text);
-}
-
-.field input:focus,
-.field select:focus,
-.field textarea:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
-}
-
-.field .error {
-  color: var(--color-error);
-  font-size: 12px;
-  margin-top: 4px;
-}
-
-.banner-error {
-  background: var(--color-error-bg);
-  border: 1px solid var(--color-error-border);
-  color: var(--color-error);
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 14px;
-  margin-bottom: 18px;
-}
-
-/* ---- Admin tables -------------------------------------------------- */
-
-table {
-  width: 100%;
-  min-width: 900px;   
-  margin: 0 auto;                       
-  border-collapse: collapse;
-  background: white;
-  font-size: 17px;
-}
-
-th, td {
-  text-align: center;
-  padding: 10px 14px;   /* was 16px 20px - the main source of the squeeze */
-  border-bottom: 3px solid var(--color-border);
-  vertical-align: middle;
-  white-space: nowrap;
-  margin: 0 auto; 
-}
-
-th {
-  background: var(--color-bg);
-  font-weight: 600;
-  color: var(--color-primary-dark);
-}
-
-tbody tr:hover {
-  background: #fafcff;
-}
-
-.page-size-select {
-  padding: 6px 10px;
-  height: 32px;
-  font-size: 14px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: white;
-  color: var(--color-text);
-  margin: 0 4px;
-}
-
-.page-size-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
-}
-
-/* ---- Compact horizontal filter bar (Weego-style single row) ---------- */
-.filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 10px;
-  background: white;
-  border: 3px solid var(--color-border);
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 16px;
- 
-}
-
-.filter-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 130px;
-}
-
-.filter-field label {
-  font-size: 17px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-}
-
-.filter-field input,
-.filter-field select {
   padding: 8px 10px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
-  font-size: 17px;
-  font-family: var(--font-body);
-  background: white;
-  color: var(--color-text);
-  height: 36px;
-}
-
-.filter-field input:focus,
-.filter-field select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
-}
-
-/* Square icon buttons, same idea as the Weego screenshot's blue
-   search / green refresh squares - color communicates the action
-   without needing a text label, which is what keeps the whole bar
-   compact on one line. */
-.icon-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  color: white;
-  flex-shrink: 0;
-}
-
-.icon-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.icon-btn-search {
-  background: var(--color-primary);
-}
-.icon-btn-search:hover {
-  background: var(--color-primary-dark);
-}
-
-.icon-btn-reset {
-  background: #16a34a;
-}
-.icon-btn-reset:hover {
-  background: #15803d;
-}
-
-/* ---- Colored status/payment pill selects ----------------------------
-   These are still real <select> elements (fully editable), just styled
-   with a background color that changes based on the currently selected
-   value - set via inline style from JS, not CSS, since CSS alone can't
-   read a <select>'s current value. See getStatusColor/getPaymentColor
-   in AdminPage.jsx. */
-.pill-select {
-  border: none;
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* ---- Modal ------------------------------------------------------------ */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 100;
-}
-
-.modal-panel {
-  background: white;
-  border-radius: 12px;
-  max-width: 480px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-  color: var(--color-text-muted);
-  padding: 4px 8px;
-}
-
-.modal-close:hover {
-  color: var(--color-primary-dark);
-}
-
-.modal-body {
-  padding: 24px;
-}
-
-.badge {
-  background: #e8eefc;
-  color: var(--color-primary-dark);
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.admin-wrap {
-  padding: 32px;
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-.admin-wrap nav a {
-  color: var(--color-primary-dark);
-  text-decoration: none;
-  font-weight: 500;
   font-size: 14px;
+  font-family: var(--font-body);
+}
+.field .error { color: #dc2626; font-size: 12px; margin-top: 4px; }
+
+.banner-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-bottom: 16px;
 }
 
-.admin-wrap nav a:hover {
-  text-decoration: underline;
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 20px;
+}
+.form-grid .field-full { grid-column: 1 / -1; }
+@media (max-width: 640px) {
+  .form-grid { grid-template-columns: 1fr; }
 }
 
-/* ---- Admin nav bar: same brand anchor as the public site header, so
-   staff and applicants clearly feel like the same product -------------- */
+.form-section-title {
+  grid-column: 1 / -1;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  font-size: 16px;
+  margin: 20px 0 4px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--color-border);
+}
+.form-section-title:first-child { margin-top: 0; }
+
+/* ---- Admin nav bar --------------------------------------------------- */
 .admin-nav {
   display: flex;
   align-items: center;
@@ -419,35 +113,77 @@ tbody tr:hover {
   background: var(--color-primary);
   color: white;
   padding: 14px 24px;
-  border-radius: 50px;
+  border-radius: 10px;
   margin-bottom: 28px;
 }
+.admin-nav .admin-nav-wordmark { font-family: var(--font-heading); font-weight: 700; font-size: 16px; margin-right: 8px; }
+.admin-nav a { color: rgba(255, 255, 255, 0.85); text-decoration: none; font-weight: 500; font-size: 14px; }
+.admin-nav a:hover { color: white; text-decoration: underline; }
+.admin-nav .button { background: white; color: var(--color-primary-dark); padding: 8px 16px; }
+.admin-nav .button:hover { background: #e8eefc; }
 
-.admin-nav .admin-nav-wordmark {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 16px;
-  margin-right: 8px;
-}
+.admin-wrap { padding: 32px; max-width: 1100px; margin: 0 auto; }
 
-.admin-nav a {
-  color: rgba(255, 255, 255, 0.85);
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 14px;
-}
+/* ---- Tables ------------------------------------------------------------ */
+.table-scroll { width: 100%; overflow-x: auto; border: 1px solid var(--color-border); border-radius: 10px; }
+table { width: 100%; min-width: 900px; border-collapse: collapse; background: white; font-size: 13px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--color-border); vertical-align: middle; white-space: nowrap; }
+th { background: var(--color-bg); font-weight: 600; color: var(--color-primary-dark); }
+tbody tr:hover { background: #fafcff; }
 
-.admin-nav a:hover {
-  color: white;
-  text-decoration: underline;
-}
-
-.admin-nav .button {
+/* ---- Filter bar --------------------------------------------------------- */
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  align-items: end;
+  gap: 12px;
   background: white;
-  color: var(--color-primary-dark);
-  padding: 8px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.filter-field { display: flex; flex-direction: column; gap: 10px; min-width: 160px; }
+.filter-field label { font-size: 15px; font-weight: 500; color: var(--color-text-muted); }
+.filter-field input, .filter-field select {
+  padding: 15px 10px; border: 1px solid var(--color-border); border-radius: 6px;
+  font-size: 15px; font-family: var(--font-body); background: white; color: var(--color-text); height: 36px;
+}
+.filter-field input:focus, .filter-field select:focus {
+  outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+}
+.filter-actions { flex-direction: row; display: flex; justify-content: center; gap: 10px; margin-top: 4px; }
+
+.icon-btn {
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  border: none; border-radius: 6px; cursor: pointer; color: white; flex-shrink: 0;
+}
+.icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.icon-btn-search { background: var(--color-primary); }
+.icon-btn-search:hover { background: var(--color-primary-dark); }
+.icon-btn-reset { background: #16a34a; }
+.icon-btn-reset:hover { background: #15803d; }
+
+.page-size-select {
+  padding: 6px 10px; height: 32px; font-size: 14px; border: 1px solid var(--color-border);
+  border-radius: 6px; background: white; color: var(--color-text); margin: 0 4px;
 }
 
-.admin-nav .button:hover {
-  background: #e8eefc;
+.pill-select { border: none; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+.badge { background: #eff6ff; color: var(--color-primary-dark); padding: 2px 10px; border-radius: 999px; font-size: 12px; }
+
+/* ---- Home page hero / buttons ------------------------------------------- */
+.hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 24px; }
+.hero-button {
+  padding: 16px 32px; border-radius: 10px; font-weight: 600; font-size: 15px;
+  text-decoration: none; text-align: center; min-width: 220px;
 }
+.hero-button.primary { background: var(--color-primary); color: white; }
+.hero-button.primary:hover { background: var(--color-primary-dark); }
+.hero-button.secondary { background: white; color: var(--color-primary-dark); border: 2px solid var(--color-primary); }
+.hero-button.secondary:hover { background: #eff6ff; }
+
+/* ---- Signature pad -------------------------------------------------------- */
+.signature-pad-wrap { border: 1px solid var(--color-border); border-radius: 8px; background: white; }
+.signature-pad-wrap canvas { display: block; width: 100%; touch-action: none; cursor: crosshair; }
