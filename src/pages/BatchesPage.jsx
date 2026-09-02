@@ -10,6 +10,10 @@ export default function BatchesPage() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState(null);
+  // null = "create new" mode. Otherwise holds the batch id currently being
+  // edited, and the same form below is reused for both create and edit.
+  const [editingId, setEditingId] = useState(null);
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
 
   async function loadData() {
     setLoading(true);
@@ -23,6 +27,25 @@ export default function BatchesPage() {
 
   useEffect(() => { loadData(); }, []);
 
+  function startEdit(batch) {
+    setEditingId(batch.id);
+    setForm({
+      companyId: batch.company_id,
+      role: batch.role,
+      quantityNeeded: batch.quantity_needed,
+      ageMin: batch.age_min,
+      ageMax: batch.age_max,
+      applicationType: batch.application_type,
+      feeAmount: batch.fee_amount,
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm(initialForm);
+    setError(null);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
@@ -30,13 +53,41 @@ export default function BatchesPage() {
       setError('Company, role, and quantity are all required.');
       return;
     }
-    const res = await apiFetch('/api/batches', { method: 'POST', body: JSON.stringify(form) });
+
+    const res = editingId
+      ? await apiFetch(`/api/batches/${editingId}`, { method: 'PATCH', body: JSON.stringify(form) })
+      : await apiFetch('/api/batches', { method: 'POST', body: JSON.stringify(form) });
+
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error || 'Failed to create batch.');
+      setError(data.error || `Failed to ${editingId ? 'update' : 'create'} batch.`);
       return;
     }
     setForm(initialForm);
+    setEditingId(null);
+    loadData();
+  }
+
+  async function handleStatusChange(batch, newStatus) {
+    setUpdatingStatusId(batch.id);
+    const res = await apiFetch(`/api/batches/${batch.id}`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || 'Failed to update status.');
+    }
+    await loadData();
+    setUpdatingStatusId(null);
+  }
+
+  async function handleDelete(batch) {
+    if (!window.confirm(`Delete the "${batch.role}" batch at ${batch.company_name}? This cannot be undone.`)) return;
+
+    const res = await apiFetch(`/api/batches/${batch.id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || 'Failed to delete batch.');
+      return;
+    }
     loadData();
   }
 
@@ -47,7 +98,7 @@ export default function BatchesPage() {
       <p style={{ color: 'var(--color-text-muted)', marginTop: -8 }}>Each batch is one specific hiring request from a company.</p>
 
       <form onSubmit={handleSubmit} className="card" style={{ maxWidth: 480, marginBottom: 24 }}>
-        <h3 style={{ marginTop: 0 }}>Create a batch</h3>
+        <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit batch' : 'Create a batch'}</h3>
         {error && <div className="banner-error">{error}</div>}
 
         <div className="field">
@@ -93,31 +144,53 @@ export default function BatchesPage() {
           <input type="number" min="0" step="1" value={form.feeAmount} onChange={(e) => setForm({ ...form, feeAmount: e.target.value })} placeholder="0 for no fee" />
         </div>
 
-        <button type="submit" className="button" style={{ width: '100%' }}>Create batch</button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button type="submit" className="button" style={{ flex: 1 }}>{editingId ? 'Save changes' : 'Create batch'}</button>
+          {editingId && (
+            <button type="button" className="button button-secondary" onClick={cancelEdit}>Cancel</button>
+          )}
+        </div>
       </form>
 
       {loading ? <p>Loading…</p> : (
-        <table>
-          <thead>
-            <tr><th>Type</th><th>Company</th><th>Role</th><th>Fee</th><th>Progress</th><th>Ages</th><th>Status</th></tr>
-          </thead>
-          <tbody>
-            {batches.map((b) => (
-              <tr key={b.id}>
-                <td><span className="badge">{b.application_type}</span></td>
-                <td>{b.company_name}</td>
-                <td>{b.role}</td>
-                <td>{Number(b.fee_amount) > 0 ? `KES ${Number(b.fee_amount).toLocaleString()}` : '—'}</td>
-                <td>{b.filled_count} of {b.quantity_needed}</td>
-                <td>{b.age_min}–{b.age_max}</td>
-                <td><span className="badge">{b.status}</span></td>
-              </tr>
-            ))}
-            {batches.length === 0 && (
-              <tr><td colSpan={7} style={{ textAlign: 'center', color: '#aaa', padding: 24 }}>No batches yet.</td></tr>
-            )}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Type</th><th>Company</th><th>Role</th><th>Fee</th><th>Progress</th><th>Ages</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              {batches.map((b) => (
+                <tr key={b.id}>
+                  <td><span className="badge">{b.application_type}</span></td>
+                  <td>{b.company_name}</td>
+                  <td>{b.role}</td>
+                  <td>{Number(b.fee_amount) > 0 ? `KES ${Number(b.fee_amount).toLocaleString()}` : '—'}</td>
+                  <td>{b.filled_count} of {b.quantity_needed}</td>
+                  <td>{b.age_min}–{b.age_max}</td>
+                  <td>
+                    <select
+                      value={b.status}
+                      disabled={updatingStatusId === b.id}
+                      onChange={(e) => handleStatusChange(b, e.target.value)}
+                      style={{ fontSize: 12, padding: '3px 6px' }}
+                    >
+                      <option value="open">open</option>
+                      <option value="filled">filled</option>
+                      <option value="closed">closed</option>
+                    </select>
+                  </td>
+                  <td>
+                    <button className="button button-secondary" style={{ fontSize: 12, padding: '4px 10px', marginRight: 6 }} onClick={() => startEdit(b)}>Edit</button>
+                    <button className="button button-secondary" style={{ fontSize: 12, padding: '4px 10px', color: '#991b1b' }} onClick={() => handleDelete(b)}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+              {batches.length === 0 && (
+                <tr><td colSpan={8} style={{ textAlign: 'center', color: '#aaa', padding: 24 }}>No batches yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </main>
   );

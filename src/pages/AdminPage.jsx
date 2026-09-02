@@ -1,5 +1,5 @@
 import { useEffect, useState, Fragment } from 'react';
-import { Search, RotateCcw } from 'lucide-react';
+import { Search, RotateCcw, Download } from 'lucide-react';
 import { apiFetch } from '../lib/api.js';
 import AdminNav from '../components/AdminNav.jsx';
 
@@ -125,6 +125,34 @@ export default function AdminPage() {
     setTimeout(loadApplicants, 0);
   }
 
+  // Downloads a CSV of everything matching the CURRENT filters (not just
+  // the current page - export deliberately ignores pagination, since the
+  // whole point is "give me everything I'm looking at, not just page 2").
+  // Same blob-download pattern as document downloads: an authenticated
+  // GET can't just be a plain <a href> link, since a normal browser
+  // navigation wouldn't carry the Authorization header.
+  async function handleExportCsv() {
+    const params = new URLSearchParams();
+    if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
+    if (filters.dateTo) params.set('dateTo', filters.dateTo);
+    if (filters.location) params.set('location', filters.location);
+    if (filters.phone) params.set('phone', filters.phone);
+    if (filters.jobType) params.set('jobType', filters.jobType);
+
+    const res = await apiFetch(`/api/applicants/export?${params.toString()}`);
+    if (!res.ok) {
+      alert('Failed to export applicants.');
+      return;
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `applicants-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  }
+
   async function handleStatusChange(applicantId, newStatus) {
     setUpdatingId(applicantId);
     try {
@@ -247,6 +275,7 @@ export default function AdminPage() {
         <div className="filter-actions">
           <button type="submit" className="icon-btn icon-btn-search" title="Search"><Search size={16} /></button>
           <button type="button" className="icon-btn icon-btn-reset" title="Clear filters" onClick={handleClearFilters}><RotateCcw size={16} /></button>
+          <button type="button" className="icon-btn icon-btn-export" title="Export CSV" onClick={handleExportCsv}><Download size={16} /></button>
         </div>
       </form>
 
