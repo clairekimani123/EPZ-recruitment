@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../lib/api.js';
+import { Link } from 'react-router-dom';
 import AdminNav from '../components/AdminNav.jsx';
 
 const initialForm = { companyId: '', role: '', quantityNeeded: '', ageMin: 18, ageMax: 30, applicationType: 'job', feeAmount: '' };
@@ -10,10 +11,11 @@ export default function BatchesPage() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState(null);
-  // null = "create new" mode. Otherwise holds the batch id currently being
-  // edited, and the same form below is reused for both create and edit.
   const [editingId, setEditingId] = useState(null);
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
+  
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   async function loadData() {
     setLoading(true);
@@ -27,6 +29,13 @@ export default function BatchesPage() {
 
   useEffect(() => { loadData(); }, []);
 
+  function openCreateModal() {
+    setForm(initialForm);
+    setEditingId(null);
+    setError(null);
+    setIsModalOpen(true);
+  }
+
   function startEdit(batch) {
     setEditingId(batch.id);
     setForm({
@@ -38,9 +47,12 @@ export default function BatchesPage() {
       applicationType: batch.application_type,
       feeAmount: batch.fee_amount,
     });
+    setError(null);
+    setIsModalOpen(true);
   }
 
-  function cancelEdit() {
+  function closeModal() {
+    setIsModalOpen(false);
     setEditingId(null);
     setForm(initialForm);
     setError(null);
@@ -63,8 +75,8 @@ export default function BatchesPage() {
       setError(data.error || `Failed to ${editingId ? 'update' : 'create'} batch.`);
       return;
     }
-    setForm(initialForm);
-    setEditingId(null);
+    
+    closeModal();
     loadData();
   }
 
@@ -94,63 +106,14 @@ export default function BatchesPage() {
   return (
     <main className="admin-wrap">
       <AdminNav />
-      <h1>Batches</h1>
-      <p style={{ color: 'var(--color-text-muted)', marginTop: -8 }}>Each batch is one specific hiring request from a company.</p>
-
-      <form onSubmit={handleSubmit} className="card" style={{ maxWidth: 480, marginBottom: 24 }}>
-        <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit batch' : 'Create a batch'}</h3>
-        {error && <div className="banner-error">{error}</div>}
-
-        <div className="field">
-          <label>Application type</label>
-          <select value={form.applicationType} onChange={(e) => setForm({ ...form, applicationType: e.target.value })}>
-            <option value="trainee">Trainee (training at Straightex)</option>
-            <option value="job">Job (hiring company)</option>
-          </select>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div>
+          <h1 style={{ margin: 0 }}>Batches</h1>
+          <p style={{ color: 'var(--color-text-muted)', margin: '4px 0 0 0' }}>Each batch is one specific hiring request from a company.</p>
         </div>
-
-        <div className="field">
-          <label>Company</label>
-          <select value={form.companyId} onChange={(e) => setForm({ ...form, companyId: e.target.value })}>
-            <option value="">Select a company…</option>
-            {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          {companies.length === 0 && <p style={{ fontSize: 12, color: '#888' }}>Add a company first on the Companies page.</p>}
-        </div>
-
-        <div className="field">
-          <label>Role</label>
-          <input value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} placeholder="e.g. Tailoring Trainee" />
-        </div>
-
-        <div className="field">
-          <label>Number needed</label>
-          <input type="number" min="1" value={form.quantityNeeded} onChange={(e) => setForm({ ...form, quantityNeeded: e.target.value })} />
-        </div>
-
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div className="field" style={{ flex: 1 }}>
-            <label>Min age</label>
-            <input type="number" value={form.ageMin} onChange={(e) => setForm({ ...form, ageMin: e.target.value })} />
-          </div>
-          <div className="field" style={{ flex: 1 }}>
-            <label>Max age</label>
-            <input type="number" value={form.ageMax} onChange={(e) => setForm({ ...form, ageMax: e.target.value })} />
-          </div>
-        </div>
-
-        <div className="field">
-          <label>Training/registration fee (KES)</label>
-          <input type="number" min="0" step="1" value={form.feeAmount} onChange={(e) => setForm({ ...form, feeAmount: e.target.value })} placeholder="0 for no fee" />
-        </div>
-
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button type="submit" className="button" style={{ flex: 1 }}>{editingId ? 'Save changes' : 'Create batch'}</button>
-          {editingId && (
-            <button type="button" className="button button-secondary" onClick={cancelEdit}>Cancel</button>
-          )}
-        </div>
-      </form>
+        <button className="button" onClick={openCreateModal}>+ Create Batch</button>
+      </div>
 
       {loading ? <p>Loading…</p> : (
         <div className="table-scroll">
@@ -162,7 +125,9 @@ export default function BatchesPage() {
               {batches.map((b) => (
                 <tr key={b.id}>
                   <td><span className="badge">{b.application_type}</span></td>
-                  <td>{b.company_name}</td>
+                  <Link to={`/admin/batches/${b.id}`} style={{ color: 'var(--color-primary)', textDecoration: 'underline', fontWeight: 500 }}>
+                    {b.company_name}
+                  </Link>
                   <td>{b.role}</td>
                   <td>{Number(b.fee_amount) > 0 ? `KES ${Number(b.fee_amount).toLocaleString()}` : '—'}</td>
                   <td>{b.filled_count} of {b.quantity_needed}</td>
@@ -190,6 +155,71 @@ export default function BatchesPage() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* MODAL OVERLAY */}
+      {isModalOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          backgroundColor: 'rgba(0,0,0,0.5)', 
+          display: 'flex', justifyContent: 'center', alignItems: 'center', 
+          zIndex: 1000, padding: 20
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto', margin: 0 }}>
+            <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit batch' : 'Create a batch'}</h3>
+            {error && <div className="banner-error">{error}</div>}
+
+            <form onSubmit={handleSubmit}>
+              <div className="field">
+                <label>Application type</label>
+                <select value={form.applicationType} onChange={(e) => setForm({ ...form, applicationType: e.target.value })}>
+                  <option value="trainee">Trainee (training at Straightex)</option>
+                  <option value="job">Job (hiring company)</option>
+                </select>
+              </div>
+
+              <div className="field">
+                <label>Company</label>
+                <select value={form.companyId} onChange={(e) => setForm({ ...form, companyId: e.target.value })}>
+                  <option value="">Select a company…</option>
+                  {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                {companies.length === 0 && <p style={{ fontSize: 12, color: '#888' }}>Add a company first on the Companies page.</p>}
+              </div>
+
+              <div className="field">
+                <label>Role</label>
+                <input value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} placeholder="e.g. Tailoring Trainee" />
+              </div>
+
+              <div className="field">
+                <label>Number needed</label>
+                <input type="number" min="1" value={form.quantityNeeded} onChange={(e) => setForm({ ...form, quantityNeeded: e.target.value })} />
+              </div>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div className="field" style={{ flex: 1 }}>
+                  <label>Min age</label>
+                  <input type="number" value={form.ageMin} onChange={(e) => setForm({ ...form, ageMin: e.target.value })} />
+                </div>
+                <div className="field" style={{ flex: 1 }}>
+                  <label>Max age</label>
+                  <input type="number" value={form.ageMax} onChange={(e) => setForm({ ...form, ageMax: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="field">
+                <label>Training/registration fee (KES)</label>
+                <input type="number" min="0" step="1" value={form.feeAmount} onChange={(e) => setForm({ ...form, feeAmount: e.target.value })} placeholder="0 for no fee" />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+                <button type="submit" className="button" style={{ flex: 1 }}>{editingId ? 'Save changes' : 'Create batch'}</button>
+                <button type="button" className="button button-secondary" onClick={closeModal}>Cancel</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </main>

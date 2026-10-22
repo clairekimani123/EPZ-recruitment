@@ -87,6 +87,11 @@ export default function JobApplyPage() {
     if (!files.passport_photo) clientErrors.passport_photo = 'Passport photo is required.';
     if (!files.personal_accident_cover) clientErrors.personal_accident_cover = 'Personal accident cover is required.';
     if (!form.declarationAccepted) clientErrors.declaration = 'You must accept the declaration to continue.';
+    if (!form.declarationIdNumber.trim()) {
+      clientErrors.declarationIdNumber = 'Please enter your ID number.';
+    } else if (form.declarationIdNumber.trim() !== form.idNumber.trim()) {
+      clientErrors.declarationIdNumber = 'This must match the ID number you entered in your Bio Data above.';
+    }
     if (signaturePadRef.current?.isEmpty()) clientErrors.signature = 'Please sign in the box above.';
 
     if (Object.keys(clientErrors).length > 0) {
@@ -124,14 +129,8 @@ export default function JobApplyPage() {
       const fee = Number(selectedBatch?.fee_amount || 0);
 
       if (fee > 0) {
-        navigate('/pay', {
-          state: {
-            referenceId: newReferenceId,
-            applicationToken: data.applicationToken,
-            feeAmount: fee,
-            fullName: form.fullName,
-            phoneNumber: form.phoneNumber,
-          },
+        navigate('/', {
+          state: { state: { message: 'Application submitted successfully!' } }
         });
       } else {
         setReferenceId(newReferenceId);
@@ -276,7 +275,7 @@ export default function JobApplyPage() {
             {errors.declaration && <div className="error">{errors.declaration}</div>}
           </div>
           <div className="field"><label>Name</label><input name="declarationName" value={form.declarationName} onChange={handleChange} /></div>
-          <div className="field"><label>ID number</label><input name="declarationIdNumber" value={form.declarationIdNumber} onChange={handleChange} /></div>
+          <div className="field"><label>ID number</label><input name="declarationIdNumber" value={form.declarationIdNumber} onChange={handleChange} />{errors.declarationIdNumber && <div className="error">{errors.declarationIdNumber}</div>}</div>
           <div className="field"><label>Date</label><input type="date" name="declarationDate" value={form.declarationDate} onChange={handleChange} /></div>
           <div className="field field-full">
             <label>Signature</label>

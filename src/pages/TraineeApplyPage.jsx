@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { API_URL } from '../lib/api.js';
 import SignaturePad from '../components/SignaturePad.jsx';
 
@@ -84,6 +84,11 @@ export default function TraineeApplyPage() {
     if (!files.passport_photo) clientErrors.passport_photo = 'Passport photo is required.';
     if (!files.personal_accident_cover) clientErrors.personal_accident_cover = 'Personal accident cover is required.';
     if (!form.declarationAccepted) clientErrors.declaration = 'You must accept the declaration to continue.';
+    if (!form.declarationIdNumber.trim()) {
+      clientErrors.declarationIdNumber = 'Please enter your ID number.';
+    } else if (form.declarationIdNumber.trim() !== form.idNumber.trim()) {
+      clientErrors.declarationIdNumber = 'This must match the ID number you entered in your Bio Data above.';
+    }
     if (signaturePadRef.current?.isEmpty()) clientErrors.signature = 'Please sign in the box above.';
 
     if (Object.keys(clientErrors).length > 0) {
@@ -91,14 +96,14 @@ export default function TraineeApplyPage() {
       return;
     }
 
-    setIsSubmitting(true);
+        setIsSubmitting(true);
     try {
       const res = await fetch(`${API_URL}/api/applicants`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
-          location: form.countyOfResidence || form.currentResidence, // reused by admin search/filter
+          location: form.countyOfResidence || form.currentResidence,
           batchId: batch.id,
         }),
       });
@@ -115,20 +120,11 @@ export default function TraineeApplyPage() {
       }
       await uploadSignature(newReferenceId);
 
-      const fee = Number(batch.fee_amount || 0);
-      if (fee > 0) {
-        navigate('/pay', {
-          state: {
-            referenceId: newReferenceId,
-            applicationToken: data.applicationToken,
-            feeAmount: fee,
-            fullName: form.fullName,
-            phoneNumber: form.phoneNumber,
-          },
-        });
-      } else {
-        setReferenceId(newReferenceId);
-      }
+      // ✅ THE FIX: Just set the reference ID. 
+      // The `if (referenceId)` statement below will automatically swap 
+      // the form out for the Success screen.
+      setReferenceId(newReferenceId);
+
     } catch (err) {
       setErrors({ general: 'Could not reach the server. Is it running?' });
     } finally {
@@ -234,7 +230,7 @@ export default function TraineeApplyPage() {
             {errors.declaration && <div className="error">{errors.declaration}</div>}
           </div>
           <div className="field"><label>Name</label><input name="declarationName" value={form.declarationName} onChange={handleChange} /></div>
-          <div className="field"><label>ID number</label><input name="declarationIdNumber" value={form.declarationIdNumber} onChange={handleChange} /></div>
+          <div className="field"><label>ID number</label><input name="declarationIdNumber" value={form.declarationIdNumber} onChange={handleChange} />{errors.declarationIdNumber && <div className="error">{errors.declarationIdNumber}</div>}</div>
           <div className="field"><label>Date</label><input type="date" name="declarationDate" value={form.declarationDate} onChange={handleChange} /></div>
           <div className="field field-full">
             <label>Signature</label>
