@@ -125,16 +125,12 @@ export default function JobApplyPage() {
       }
       await uploadSignature(newReferenceId);
 
-      const selectedBatch = batches.find((b) => String(b.id) === String(form.batchId));
-      const fee = Number(selectedBatch?.fee_amount || 0);
+      // ✅ THE FIX: Just set the reference ID. 
+      // The `if (referenceId)` statement below will automatically swap 
+      // the form out for the Success screen.
+      setReferenceId(newReferenceId);
 
-      if (fee > 0) {
-        navigate('/', {
-          state: { state: { message: 'Application submitted successfully!' } }
-        });
-      } else {
-        setReferenceId(newReferenceId);
-      }
+
     } catch (err) {
       setErrors({ general: 'Could not reach the server. Is it running?' });
     } finally {
@@ -148,12 +144,8 @@ export default function JobApplyPage() {
         <div className="card narrow" style={{ textAlign: 'center' }}>
           <h1>Application received</h1>
           <p style={{ color: 'var(--color-text-muted)' }}>Your reference number is:</p>
-          <p style={{ fontSize: 32, fontWeight: 700, fontFamily: 'monospace', color: 'var(--color-primary)' }}>
-            #{referenceId}
-          </p>
-          <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
-            Save this number. Our team will call you about next steps.
-          </p>
+          <p style={{ fontSize: 32, fontWeight: 700, fontFamily: 'monospace', color: 'var(--color-primary)' }}>#{referenceId}</p>
+          <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Save this number. Our team will call you about next steps.</p>
           <Link to="/" className="button button-secondary" style={{ display: 'inline-block', marginTop: 12 }}>
             Back to Home
           </Link>
