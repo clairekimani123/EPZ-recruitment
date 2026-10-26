@@ -593,3 +593,62 @@ td:first-child {
 .spin {
   animation: spin 1s linear infinite;
 }
+
+/* --- Navbar Styling --- */
+.my-custom-navbar {
+  display: flex;
+  flex-direction: column; /* Stacks items on mobile */
+  align-items: center;
+  background-color: #2563eb; /* Blue background */
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  gap: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.nav-wordmark {
+  color: white;
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.nav-links {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.nav-links a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.nav-links a:hover {
+  text-decoration: underline;
+}
+
+.nav-logout-btn {
+  background-color: white;
+  color: #2563eb;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%; /* Full width on mobile for easier tapping */
+}
+
+/* --- Desktop adjustments --- */
+@media (min-width: 768px) {
+  .my-custom-navbar {
+    flex-direction: row; /* Row layout on desktop */
+    justify-content: space-between; /* Space between the 3 main elements */
+  }
+  
+  .nav-logout-btn {
+    width: auto; /* Auto width on desktop */
+  }
+}
